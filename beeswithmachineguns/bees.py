@@ -501,7 +501,7 @@ def attack(url, n, c, **options):
 
     if url_file:
         try:
-            with open(url, 'r') as content_file:
+            with open(url_file, 'r') as content_file:
                 content = next(content_file)
                 request = urllib2.Request(content)
         except IOError:
