@@ -239,6 +239,11 @@ def _attack(params):
             os.system("scp -q -o 'StrictHostKeyChecking=no' -i %s %s %s@%s:/tmp/honeycomb" % (pem_file_path, params['post_file'], params['username'], params['instance_name']))
             options += ' -T "%(mime_type)s; charset=UTF-8" -p /tmp/honeycomb' % params
 
+        if params['url_file']:
+            pem_file_path=_get_pem_path(params['key_name'])
+            os.system("scp -q -o 'StrictHostKeyChecking=no' -i %s %s %s@%s:/tmp/beeswax" % (pem_file_path, params['url_file'], params['username'], params['instance_name']))
+            options += ' -L /tmp/beeswax' % params
+
         if params['keep_alive']:
             options += ' -k'
 
@@ -425,6 +430,7 @@ def attack(url, n, c, **options):
     csv_filename = options.get("csv_filename", '')
     cookies = options.get('cookies', '')
     post_file = options.get('post_file', '')
+    url_file = options.get('url_file', '')
     keep_alive = options.get('keep_alive', False)
     basic_auth = options.get('basic_auth', '')
 
@@ -483,6 +489,7 @@ def attack(url, n, c, **options):
             'headers': headers,
             'cookies': cookies,
             'post_file': options.get('post_file'),
+            'url_file': options.get('url_file'),
             'keep_alive': options.get('keep_alive'),
             'mime_type': options.get('mime_type', ''),
             'tpr': options.get('tpr'),
@@ -492,7 +499,17 @@ def attack(url, n, c, **options):
 
     print 'Stinging URL so it will be cached for the attack.'
 
-    request = urllib2.Request(url)
+    if url_file:
+        try:
+            with open(url, 'r') as content_file:
+                content = next(content_file)
+                request = urllib2.Request(content)
+        except IOError:
+            print 'bees: error: The url file you provided doesn\'t exist.'
+            return
+    else:
+        request = urllib2.Request(url)
+
     # Need to revisit to support all http verbs.
     if post_file:
         try:
@@ -502,6 +519,7 @@ def attack(url, n, c, **options):
         except IOError:
             print 'bees: error: The post file you provided doesn\'t exist.'
             return
+
 
     if cookies is not '':
         request.add_header('Cookie', cookies)
